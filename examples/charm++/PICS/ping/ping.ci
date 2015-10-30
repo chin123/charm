@@ -23,8 +23,6 @@ mainmodule ping {
           CkPrintf("End Step and Resume CB\n");
         }
       }
-
-	
       serial {
         CkPrintf("------------------in exiting \n");
         CkExit();

@@ -1,3 +1,20 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename:  autoPerfAPI.C
+ *
+ *    Description: API for users to use Control Points 
+ *
+ *        Version:  1.0
+ *        Created:  03/03/2013 05:25:52 PM
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Yanhua Sun(), 
+ *   Organization:  uiuc
+ *
+ * =====================================================================================
+ */
 #include "picsdefs.h"
 #include "picsdefscpp.h"
 #include "picsautoperf.h"
@@ -6,7 +23,6 @@
 #define PERF_FREQUENCY 1
 #define   CP_PERIOD  100
 
-extern int user_call;
 extern int WARMUP_STEP;
 extern int PAUSE_STEP;
 CkpvDeclare(int, currentStep);
@@ -20,19 +36,19 @@ void PICS_registerAutoPerfDone(CkCallback cb, int frameworkShouldAdvancePhase){
   autoPerfProxy.setAutoPerfDoneCallback(cb);
 }
 
-void PICS_setNumOfPhases(bool fromGlobal, int num, char *names[]) {
-  std::vector<char> seqNames(num*40);
+void PICS_setNumOfPhases(int fromGlobal, int num, char *names[]) {
+  char seqNames[num*40];
   for(int i=0; i<num; i++)
   {
-    strcpy(&seqNames[0]+i*40, names[i]);
+    strcpy(seqNames+i*40, names[i]); 
   }
   if(fromGlobal)
-    autoPerfProxy.setNumOfPhases(num, &seqNames[0]);
+    autoPerfProxy.setNumOfPhases(num, seqNames);
   else
-    autoPerfProxy.ckLocalBranch()->setNumOfPhases(num, &seqNames[0]);
+    autoPerfProxy.ckLocalBranch()->setNumOfPhases(num, seqNames);
 }
 
-void PICS_startPhase( bool fromGlobal, int phaseId)
+void PICS_startPhase( int fromGlobal, int phaseId)
 {
   if(fromGlobal)
     autoPerfProxy.startPhase(phaseId);
@@ -40,7 +56,7 @@ void PICS_startPhase( bool fromGlobal, int phaseId)
     autoPerfProxy.ckLocalBranch()->startPhase(phaseId);
 }
 
-void PICS_endPhase( bool fromGlobal)
+void PICS_endPhase( int fromGlobal)
 {
   if(fromGlobal)
     autoPerfProxy.endPhase();
@@ -48,25 +64,23 @@ void PICS_endPhase( bool fromGlobal)
     autoPerfProxy.ckLocalBranch()->endPhase();
 }
 
-void PICS_startStep(bool fromGlobal)
+void PICS_startStep(int fromGlobal)
 {
-  user_call = 1; //Sets call flag to 1 whenever this is called by the user
   if(fromGlobal)
     autoPerfProxy.startStep();
   else
     autoPerfProxy.ckLocalBranch()->startStep();
 }
 
-void PICS_endStep(bool fromGlobal )
+void PICS_endStep(int fromGlobal )
 {
-  user_call = 1;
   if(fromGlobal)
     autoPerfProxy.endStep(fromGlobal, CkMyPe(), 1);
   else
     autoPerfProxy.ckLocalBranch()->endStep(fromGlobal, CkMyPe(), 1);
 }
 
-void PICS_endStepInc(bool fromGlobal, int incSteps  )
+void PICS_endStepInc(int fromGlobal, int incSteps  )
 {
   if(fromGlobal)
     autoPerfProxy.endStep(fromGlobal, CkMyPe(), incSteps);
@@ -76,7 +90,7 @@ void PICS_endStepInc(bool fromGlobal, int incSteps  )
 
 
 
-void PICS_endStepResumeCb( bool fromGlobal, CkCallback cb)
+void PICS_endStepResumeCb( int fromGlobal, CkCallback cb)
 {
   if(fromGlobal) {
     autoPerfProxy.endStepResumeCb(true, CkMyPe(), cb);
@@ -114,9 +128,7 @@ void PICS_SetAutoTimer(){
 
 void startAnalysisonIdle()
 {
-  if (traceAutoPerfGID.idx !=0 && ((CkGroupID)autoPerfProxy).idx != 0 &&
-      CksvAccess(availAnalyzeNodeCP) == 1 &&
-      CkpvAccess(hasPendingAnalysis) == 0 )
+  if(traceAutoPerfGID.idx !=0 && ((CkGroupID)autoPerfProxy).idx != 0 && CksvAccess(availAnalyzeNodeCP) == 1 && CkpvAccess(hasPendingAnalysis) == 0 )
   {
     CksvAccess(availAnalyzeNodeCP) = 0;
     CcdCallFnAfterOnPE((CcdVoidFn)autoPerfReset, NULL, CP_PERIOD, CkMyPe());

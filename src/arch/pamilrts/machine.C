@@ -272,6 +272,12 @@ static void CmiSendPeer (int rank, int size, char *msg) {
 }
 #endif
 
+INLINE_KEYWORD void LrtsPrepareEnvelope(char *msg, int size)
+{
+    CmiSetMsgSize(msg, size);
+    CMI_SET_CHECKSUM(msg, size);
+}
+
 
 static void recv_done(pami_context_t ctxt, void *clientdata, pami_result_t result) 
   /* recv done callback: push the recved msg to recv queue */
@@ -485,10 +491,12 @@ pami_result_t init_comm_thread (pami_context_t   context,
   state->flag = 0;
   _comm_thread_id = state->id;
 
+#if 1
   //set the seed to choose destination context
   uint64_t rseedl = r_seed;
   rseedl |= (uint64_t)context;
   r_seed = ((uint32_t)rseedl)^((uint32_t)(rseedl >> 32));
+#endif
 
   _cmi_bgq_incommthread = 1;
 
@@ -568,6 +576,8 @@ int CMI_Progress_finalize(int start, int ncontexts) {
   return 0;
 }
 #endif
+
+#include "manytomany.c"
 
 void LrtsInit(int *argc, char ***argv, int *numNodes, int *myNodeID)
 {
@@ -1018,8 +1028,12 @@ void LrtsAdvanceCommunication(int whenidle) {
 static pami_result_t machine_network_barrier(pami_context_t   my_context, 
     int              to_lock) 
 {
+  pami_result_t result = PAMI_SUCCESS;    
   if (to_lock)
     PAMIX_CONTEXT_LOCK(my_context);    
+  result = PAMI_Collective(my_context, &pami_barrier);       
+  if (to_lock)
+    PAMIX_CONTEXT_UNLOCK(my_context);
 
 #ifdef LIBCOLL
   libcoll_result_t result = LIBCOLL_SUCCESS;

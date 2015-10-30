@@ -1,10 +1,18 @@
+module PowerLogger{
+  group PowerLogger{
+    entry PowerLogger(int);
+  };
+};
+
 module TraceAutoPerf {
+  extern  module  PowerLogger;
   mainchare TraceAutoPerfInit {
     entry TraceAutoPerfInit(CkArgMsg *m);
   };
 
-  initnode void _initTraceAutoPerfNode();
   initproc void _initTraceAutoPerfBOC();
+  readonly CProxy_PowerLogger pLog;
+  //readonly CkGroupID traceAutoPerfGID;
   readonly CProxy_TraceAutoPerfBOC autoPerfProxy;
 
   readonly bool isPeriodicalAnalysis;
@@ -23,16 +31,16 @@ module TraceAutoPerf {
   group [migratable] TraceAutoPerfBOC {
     entry TraceAutoPerfBOC(void);
     entry void registerPerfGoal(int goalIndex);
-    entry void setAutoPerfDoneCallback(CkCallback cb);
+    entry void setAutoPerfDoneCallback(CkCallback cb); 
     entry void setUserDefinedGoal(double value);
     entry void setNumOfPhases(int num, char names[num*40]);
     entry [expedited,inline] void startStep();
-    entry [expedited,inline] void endStep(bool fromGlobal, int pe, int incSteps);
-    entry [expedited,inline] void endPhaseAndStep(bool fromGlobal, int pe);
+    entry [expedited,inline] void endStep(int fromGlobal, int pe, int incSteps);
+    entry [expedited,inline] void endPhaseAndStep(int fromGlobal, int pe);
     entry void resume();
-    entry [expedited,inline] void endStepResumeCb(bool fromGlobal, int pe, CkCallback cb);
-    entry void run(bool fromGlobal, int fromPE);
-    entry void setCbAndRun(bool fromGlobal, int fromPE, CkCallback cb) ;
+    entry [expedited,inline] void endStepResumeCb(int fromGlobal, int pe, CkCallback cb);
+    entry void run(int fromGlobal, int fromPE);
+    entry void setCbAndRun(int fromGlobal, int fromPE, CkCallback cb) ;
     entry [expedited,inline] void startPhase(int phaseId);
     entry [expedited,inline] void endPhase();
     entry [expedited,inline] void getPerfData(int reductionPE, CkCallback cb);

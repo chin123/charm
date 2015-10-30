@@ -1,4 +1,5 @@
 #include "trace-perf.h"
+//#include "picstunableparameter.h"
 #include <stdlib.h>
 CkpvStaticDeclare(TraceAutoPerf*, _trace);
 
@@ -143,7 +144,7 @@ void TraceAutoPerf::countNewChare()
 void TraceAutoPerf::creation(envelope *env, int epIdx, int num) { 
 } 
 
-void TraceAutoPerf::creationMulticast(envelope *, int epIdx, int num, const int *pelist) { }
+void TraceAutoPerf::creationMulticast(envelope *, int epIdx, int num, int *pelist) { }
 
 void TraceAutoPerf::creationDone(int num) { }
 
@@ -186,8 +187,7 @@ void TraceAutoPerf::beginExecute(envelope *env, void *obj)
   }
 }
 
-void TraceAutoPerf::beginExecute(envelope *env, int event,int msgType,int ep,
-    int srcPe, int mlen, CmiObjId *idx)
+void TraceAutoPerf::beginExecute(envelope *env, int event,int msgType,int ep,int srcPe, int mlen, CmiObjId *idx)
 {
   if(isTraceOn){
     lastbeginMessageSize = env->getTotalsize();
@@ -203,8 +203,7 @@ void TraceAutoPerf::beginExecute(envelope *env, int event,int msgType,int ep,
   }
 }
 
-void TraceAutoPerf::beginExecute(int event,int msgType,int ep,int srcPe,
-    int mlen, CmiObjId *idx, void *obj)
+void TraceAutoPerf::beginExecute(int event,int msgType,int ep,int srcPe, int mlen, CmiObjId *idx, void *obj)
 {
   if(isTraceOn){
     lastBeginExecuteTime = CkWallTimer();
@@ -223,10 +222,34 @@ void TraceAutoPerf::endExecute(void)
     lastEvent =  -1;
     totalEntryMethodTime += executionTime;
     totalEntryMethodInvocations ++;
-    if(executionTime > maxEntryTime) {
-      maxEntryTime = executionTime;
-      maxEntryIdx = currentEP;
-    }
+//    int chareIdx = _entryTable[currentEP]->chareIdx;
+//    int userChareIdx = -1;
+//    if(chareMap.count(chareIdx)>0)
+//      userChareIdx = chareMap[chareIdx];
+//    if(userChareIdx == 1)
+//    {
+//      if(executionTime > maxEntryTime_1) {
+//        maxEntryTime_1 = executionTime;
+//        maxEntryIdx_1 = currentEP;
+//      }
+//      totalEntryMethodInvocations_1 ++;
+//      totalEntryMethodTime_1 += executionTime;
+//    }else if (userChareIdx == 2)
+//    {
+//      if(executionTime > maxEntryTime_2) {
+//        maxEntryTime_2 = executionTime;
+//        maxEntryIdx_2 = currentEP;
+//      }
+//      totalEntryMethodInvocations_2 ++;
+//      totalEntryMethodTime_2 += executionTime;
+//    }
+//    else
+//    {
+      if(executionTime > maxEntryTime) {
+        maxEntryTime = executionTime;
+        maxEntryIdx = currentEP;
+      }
+//    }
     
     {
       ObjectLoadMap_t::iterator  iter;
@@ -298,18 +321,14 @@ void TraceAutoPerf::free(void *where, int size) { }
 
 void TraceAutoPerf::traceClose(void)
 {
-  if (CkpvAccess(_traces)) {
-    CkpvAccess(_traces)->endComputation();
-    CkpvAccess(_traces)->removeTrace(this);
-  }
+  CkpvAccess(_traces)->endComputation();
+  CkpvAccess(_traces)->removeTrace(this);
 }
 
 
 void TraceAutoPerf::printSummary() { }
 
-void TraceAutoPerf::summarizeObjectInfo(double &maxtime, double &totaltime,
-    double &maxMsgCount, double &totalMsgCount, double &maxMsgSize,
-    double &totalMsgSize, double &numObjs) {
+void TraceAutoPerf::getObjInfo(double &maxtime, double &totaltime, double &maxMsgCount, double &totalMsgCount, double &maxMsgSize,double &totalMsgSize, double &numObjs) {
   void *maximum = NULL;
   for(ObjectLoadMap_t::iterator it= objectLoads.begin(); it!= objectLoads.end(); it++)
   {
@@ -356,7 +375,7 @@ PerfData* TraceAutoPerf::getSummary() {
   currentSummary->data[MAX_EntryID]= maxEntryIdx;
   currentSummary->data[MAX_EntryID_1]= maxEntryIdx_1;
   currentSummary->data[MAX_EntryID_2]= maxEntryIdx_2;
-  summarizeObjectInfo(currentSummary->data[MAX_LoadPerObject], currentSummary->data[AVG_LoadPerObject], currentSummary->data[MAX_NumMsgsPerObject],  currentSummary->data[AVG_NumMsgsPerObject], currentSummary->data[MAX_BytesPerObject], currentSummary->data[AVG_BytesPerObject], currentSummary->data[AVG_NumObjectsPerPE]);
+  getObjInfo(currentSummary->data[MAX_LoadPerObject], currentSummary->data[AVG_LoadPerObject], currentSummary->data[MAX_NumMsgsPerObject],  currentSummary->data[AVG_NumMsgsPerObject], currentSummary->data[MAX_BytesPerObject], currentSummary->data[AVG_BytesPerObject], currentSummary->data[AVG_NumObjectsPerPE]);
   currentSummary->data[MAX_NumInvocations] = currentSummary->data[AVG_NumInvocations] = (double)totalEntryMethodInvocations;
 #if CMK_HAS_COUNTER_PAPI
   readPAPI();
@@ -365,6 +384,17 @@ PerfData* TraceAutoPerf::getSummary() {
 #endif
   currentSummary->data[MAX_NumMsgRecv] = currentSummary->data[MIN_NumMsgRecv] = currentSummary->data[AVG_NumMsgRecv];
   currentSummary->data[MAX_BytesMsgRecv] = currentSummary->data[MIN_BytesMsgRecv] = currentSummary->data[AVG_BytesMsgRecv];
+#if 	POWER_AVAIL
+  //      PowerLogger *myPLog = pLog.ckLocalBranch() ;
+  //		  float cpuP, coreP, memP, temp, totpower;
+  //		  myPLog ->getPower(&cpuP, &coreP, &memP, &temp, &totpower);
+  //		  currentSummary-> minCPUp = currentSummary-> maxCPUp = currentSummary->totalCPUp = cpuP;
+  //	    currentSummary->minCorep = currentSummary->maxCorep =  currentSummary->totalCorep = coreP;
+  //	    currentSummary->minMemp = currentSummary->maxMemp =  currentSummary->totalMemp = memP;
+  //	    currentSummary->minTemp = currentSummary->maxTemp =  currentSummary->totalTemp = temp;
+  //	    currentSummary->minTotpower = currentSummary->maxTotpower =  currentSummary->totalTotpower = totpower;
+#endif
+
   currentSummary->data[MinIdlePE] = CkMyPe();
   currentSummary->data[MAX_IdlePE] = CkMyPe();
   currentSummary->data[MAX_OverheadPE] = CkMyPe();
@@ -383,7 +413,7 @@ PerfData* TraceAutoPerf::getSummary() {
   return currentSummary;
 }
 
-void _createTraceperfReport(char **argv)
+void _createTraceautoPerf(char **argv)
 {
   CkpvInitialize(TraceAutoPerf*, _trace);
   CkpvAccess(_trace) = new TraceAutoPerf(argv);

@@ -2,9 +2,7 @@
 #define  TRACE__AUTOPERF__H__
 #define _VERBOSE_H
 
-#include "picstreenode.h"
-#include "picsdecisiontree.h"
-#include "picsautoperfAPI.h"
+#include <stdio.h>
 #include <errno.h>
 #include "charm++.h"
 #include "trace.h"
@@ -13,13 +11,17 @@
 #include "trace-common.h"
 #include "TraceAutoPerf.decl.h"
 #include "trace-projections.h"
+#include "PowerLogger.h"
 #include <vector>
 #include <map>
 #include <list>
 #include <fstream>
 #include <iostream>
-#include <utility>
+#include <utility> 
+#include "picstreenode.h"
+#include "picsdecisiontree.h"
 
+using namespace std;
 
 CkpvExtern(int, numOfPhases);
 class SavedPerfDatabase;
@@ -35,6 +37,7 @@ CkpvExtern(int, numChildren);
 
 extern CkGroupID traceAutoPerfGID;
 extern CProxy_TraceAutoPerfBOC autoPerfProxy;
+extern CProxy_PowerLogger pLog;
 extern int treeBranchFactor;
 extern int numGroups;
 extern int treeGroupSize;
@@ -72,15 +75,10 @@ public:
     userMetrics = src->userMetrics;
   }
 
-  void printMe(FILE *fp, const char *str) {
+  void printMe(FILE *fp, char *str) {
     for(int i=0; i<NUM_NODES; i++)
     {
-      if (i == AVG_IdlePercentage || i == AVG_OverheadPercentage ||
-          i==AVG_UtilizationPercentage || i==AVG_AppPercentage ||
-          i == MAX_IdlePercentage || i == MAX_OverheadPercentage ||
-          i == MAX_UtilizationPercentage || i == MAX_AppPercentage ||
-          i == MIN_IdlePercentage || i == MIN_OverheadPercentage ||
-          i == MIN_UtilizationPercentage)
+      if(i == AVG_IdlePercentage || i == AVG_OverheadPercentage || i==AVG_UtilizationPercentage || i==AVG_AppPercentage || i == MAX_IdlePercentage || i == MAX_OverheadPercentage || i == MAX_UtilizationPercentage || i == MAX_AppPercentage || i == MIN_IdlePercentage || i == MIN_OverheadPercentage || i == MIN_UtilizationPercentage)
         fprintf(fp, "%d %s %.1f\n", i, FieldName[i], 100*data[i]);
       else
         fprintf(fp, "%d %s %f\n", i, FieldName[i], data[i]);
@@ -93,27 +91,32 @@ public:
  */
 template <class DataType> class Database{
 private:
-  std::vector<DataType> array;
+  DataType *array;
   int curIdx;
   int prevIdx;
+  int capacity;
 
 public:
   Database() {
+    capacity = 10;
     prevIdx = curIdx = -1;
-    array.resize(10);
-    for(int i=0; i<array.size(); i++)
+    array = (DataType*)malloc(sizeof(DataType)*capacity);
+    for(int i=0; i<capacity; i++)
       array[i] = NULL;
   }
 
   Database(int s) {
+    capacity = s;
     prevIdx = curIdx = -1;
-    array.resize(s);
+    array = (DataType*)malloc(sizeof(DataType)*capacity);
+    for(int i=0; i<capacity; i++)
+      array[i] = NULL;
   }
 
   DataType add(DataType source) {
     DataType oldData;
     prevIdx = curIdx;
-    curIdx = (curIdx+1)%array.size();
+    curIdx = (curIdx+1)%capacity;
     oldData = array[curIdx];
     array[curIdx] = source;
     if(prevIdx == -1) {
@@ -132,7 +135,7 @@ public:
 
   //relative position index
   DataType getData(int index) {
-    int i = (curIdx+index+array.size())%array.size();
+    int i = (curIdx+index+capacity)%capacity;
     return array[i];
   }
 
@@ -159,10 +162,11 @@ public:
   void setUserDefinedMetrics(double v) { perfList[curIdx]->userMetrics = v; }
   void setPhase(int phaseId) { currentPhase = phaseId; }
   void endCurrent(void) ;
+  void getData(int i) { }
   void copyData(PerfData *source, int num);   //copy data from source
   void setData(PerfData *source);
   bool timeStepLonger() { return true;}
-  double getCurrentTimestepDuration() { return perfList[curIdx]->timeStep; }
+  double getCurrentTimestep() { return perfList[curIdx]->timeStep; }
   double getTimestepRatio() { return perfList[curIdx]->timeStep/perfList[prevIdx]->timeStep; }
   double getUtilRatio() { return perfList[curIdx]->utilPercentage/perfList[prevIdx]->utilPercentage; }
   double getEnergyRatio() { return 0; }
@@ -172,6 +176,7 @@ public:
   double getCurrentOverheadPercentage() { return perfList[curIdx]->overheadPercentage; }
   double getPreviousOverheadPercentage() { return perfList[prevIdx]->overheadPercentage; }
   double getOverheadRatio() { return perfList[curIdx]->overheadPercentage/perfList[prevIdx]->overheadPercentage; }
+  void getAllTimeSteps(double *y, int n) { }
 };
 
 class TraceAutoPerfInit : public Chare {
@@ -196,14 +201,14 @@ private:
   double      bestTimeStep;
   double      currentTimeStep;
 
-  int         lastAnalyzeStep;
+  int         lastAnalyzeStep;   
   int         currentAppStep;
   int         analyzeStep;
   double      endStepTimer;
   double      lastCriticalPathLength;
   double      lastAnalyzeTimer;
   LBDatabase  *theLbdb;
-  std::vector<IntDoubleMap> solutions;
+  vector<IntDoubleMap> solutions;
   std::vector<Condition*>    perfProblems;
   std::vector<int>            problemProcList;
   DecisionTree* priorityTree;
@@ -224,6 +229,7 @@ public:
   void pup(PUP::er &p) {
     CBase_TraceAutoPerfBOC::pup(p);
   }
+
   void registerPerfGoal(int goalIndex);
   void setUserDefinedGoal(double value);
   void setAutoPerfDoneCallback(CkCallback cb); 
@@ -234,16 +240,16 @@ public:
   void startPhase(int phaseId);
   void endPhase();
   void startStep();
-  void endStep(bool fromGlobal, int pe, int incSteps);
-  void endPhaseAndStep(bool fromGlobal, int pe);
-  void endStepResumeCb(bool fromGlobal, int pe, CkCallback cb);
+  void endStep(int fromGlobal, int pe, int incSteps);
+  void endPhaseAndStep(int fromGlobal, int pe);
+  void endStepResumeCb(int fromGlobal, int pe, CkCallback cb);
   void getPerfData(int reductionPE, CkCallback cb);
-  void run(bool fromGlobal, int fromPE);
-  void setCbAndRun(bool fromGlobal, int fromPE, CkCallback cb) ;
+  void run(int fromGlobal, int fromPE);
+  void setCbAndRun(int fromGlobal, int fromPE, CkCallback cb) ;
   void PICS_markLDBStart(int appStep) ;
   void PICS_markLDBEnd() ;
 
-  void setNumOfPhases(int num, const char names[]);
+  void setNumOfPhases(int num, char names[]);
   void setProjectionsOutput();
   void recvGlobalSummary(CkReductionMsg *msg);
 
@@ -278,6 +284,8 @@ public:
 
 class ObjIdentifier {
 public:
+  //int _aid;
+  //int _idx;
   void *objPtr;
 
   ObjIdentifier(void *p) {
@@ -285,6 +293,8 @@ public:
   }
 
   ObjIdentifier(int a, int i, void *p) {
+    //_aid = a;
+    //_idx = i;
     objPtr = p;
   }
 };
@@ -305,8 +315,13 @@ public:
 
 class compare {
 public:
-  bool operator () (const void *x, const void *y) const {
-    return (x < y);
+  bool operator () (const void *x, const void *y) {
+    bool ret;
+    if(x == y)
+      ret = false;
+    else
+      ret = true;
+    return ret;
   }
 };
 

@@ -1,8 +1,8 @@
-#ifndef __PICSDEFS__CPP_H__
-#define  __PICSDEFS__CPP_H__
 
 #include <map>
 #include <vector>
+
+using namespace std;
 
 typedef std::map<int,double> IntDoubleMap;
 

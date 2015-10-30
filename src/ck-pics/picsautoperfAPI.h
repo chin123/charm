@@ -8,14 +8,14 @@
 #endif
 
 void PICS_registerAutoPerfDone(CkCallback cb, int frameworkShouldAdvancePhase);
-void PICS_setNumOfPhases(bool fromGlobal, int num, char *names[]);
+void PICS_setNumOfPhases(int fromGlobal, int num, char *names[]);
 
-void PICS_startStep(bool fromGlobal);
-void PICS_endStep(bool fromGlobal);
-void PICS_endStepInc(bool fromGlobal, int incSteps);
-void PICS_endStepResumeCb(bool fromGlobal,  CkCallback cb);
-void PICS_startPhase(bool fromGlobal, int phaseId);
-void PICS_endPhase(bool fromGlobal);
+void PICS_startStep(int fromGlobal);
+void PICS_endStep(int fromGlobal);
+void PICS_endStepInc(int fromGlobal, int incSteps);
+void PICS_endStepResumeCb(int fromGlobal,  CkCallback cb);
+void PICS_startPhase(int fromGlobal, int phaseId);
+void PICS_endPhase(int fromGlobal);
 
 void PICS_localAutoPerfRun( );
 

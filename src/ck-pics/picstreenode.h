@@ -1,12 +1,10 @@
+
 #ifndef __TREENODE__H__
 #define __TREENODE__H__
 
 #include <vector>
 #include <string.h>
 #include <assert.h>
-#include <stdio.h>
-
-#include "charm++.h"
 #include "picsdefs.h"
 #include "picsdefscpp.h"
 class TreeNode;
@@ -16,7 +14,7 @@ typedef std::vector<TreeNode*>::iterator NodeIter;
 
 class Condition {
 private:
-  std::string name;
+  char    name[30];
   int     varIndex;
   double  base;
   int     baseIndex;
@@ -29,17 +27,16 @@ private:
 
 public:
   Condition() : varIndex(-2) {}
-  Condition(std::string n, int _varIndex, Operator _op,  double _base,
-      CompareSymbol c) : varIndex(_varIndex), base(_base), baseIndex(-1),
-      thresholdIndex(-1), threshold(0), symbol(c), op(_op) {
-      name = n;
+  Condition(const char *n, int _varIndex, Operator _op,  double _base, CompareSymbol c) :
+    varIndex(_varIndex), base(_base), baseIndex(-1), thresholdIndex(-1), threshold(0), symbol(c), op(_op) {
+      strcpy(name, n);
+      //printf("constructing  %s   %d : %f \n", name, varIndex, base);
   }
 
-  Condition(std::string n, int _varIndex, Operator _op, int _baseIndex,
-      double _threshold, CompareSymbol c) : varIndex(_varIndex),
-      baseIndex(_baseIndex), thresholdIndex(-1), threshold(_threshold),
-      symbol(c), op(_op) {
-      name = n;
+  Condition(const char *n, int _varIndex, Operator _op, int _baseIndex, double _threshold, CompareSymbol c) : 
+    varIndex(_varIndex), baseIndex(_baseIndex), threshold(_threshold), thresholdIndex(-1), symbol(c), op(_op) {
+      strcpy(name, n);
+    //printf("constructing  %s   %d : baseindx %d \n", name, varIndex, baseIndex);
   }
 
   double getPotentialImprove() { return potentialImprove;}
@@ -63,7 +60,7 @@ public:
   }
   void printMe(){
     int abseff = eff>=0?eff:-eff;
-    CkPrintf("solution %s  %s \n", eff>0?"UP":"Down", EffectName[abseff]);
+    printf("solution %s  %s \n", eff>0?"UP":"Down", EffectName[abseff]);
   }
   void printDataToFile(double *input, FILE *fp) ;
   int getValue() { return eff;}
@@ -104,7 +101,7 @@ public:
   void beginChild();
   int isEndChild();
 
-  TreeNode* getCurrentChild();
+  TreeNode* getCurrentChild(); 
   void nextChild();
 
   void printMe();
@@ -116,12 +113,13 @@ public:
 
   bool isSolution() { return _isSolution; }
 
-  double getPotentialImprove() {
-    CkAssert(!_isSolution);
+  double getPotentialImprove() { 
+    //printMe();
+    assert(!_isSolution);
     return data.condition->getPotentialImprove();
   }
-  void setPotentialImprove(double v) {
-    CkAssert(!_isSolution);
+  void setPotentialImprove(double v) { 
+    assert(!_isSolution);
     data.condition->setPotentialImprove(v);
   }
 };

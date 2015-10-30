@@ -1,6 +1,23 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename:  decisiontree.C
+ *
+ *    Description:  
+ *
+ *        Version:  1.0
+ *        Created:  09/05/2014 03:36:39 PM
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  YOUR NAME (), 
+ *   Organization:  
+ *
+ * =====================================================================================
+ */
 #include <stdlib.h>
 #include <stdio.h>
-#include <fstream>
+#include <string.h>
 #include <string>
 #include <vector>
 #include <queue>
@@ -22,7 +39,7 @@ DecisionTree::DecisionTree(TreeNode *p) {
 typedef std::map<std::string, int> keyid_map;
 typedef std::map<std::string, TreeNode*> tree_map;
 
-void DecisionTree::build(const char *filename) {
+void DecisionTree::build(char *filename) {
 
   keyid_map fieldMap;
   keyid_map updownMap;
@@ -48,21 +65,23 @@ void DecisionTree::build(const char *filename) {
   opMap["MUL"] = 2;
   opMap["DIV"] = 3;
 
-  std::ifstream file(filename);
+  FILE *fp = fopen(filename, "r");
 
   int nodeType;
-  std::string keyStr;
-  std::string fieldTypeName;
-  std::string symbol;
-  std::string parentName;
-  std::string typeStr;
-  std::string baseFieldType;
-  std::string op;
+  char keyStr[NAME_LENGTH];
+  char fieldTypeName[NAME_LENGTH];
+  char fieldTypeName2[NAME_LENGTH];
+  char symbol[NAME_LENGTH];
+  char parentName[NAME_LENGTH];
+  char typeStr[10];
+  char baseFieldType[NAME_LENGTH];
+  char baseFieldType2[NAME_LENGTH];
+  char op[10];
   int  fieldType;
   int  flag;
-  std::string avgMinMax;
+  char avgMinMax[10];
   size_t len = 0;
-  std::string line;
+  char *line = NULL;
   tree_map nodemap;
   TreeNode *node;
   int numOfParents;
@@ -70,31 +89,43 @@ void DecisionTree::build(const char *filename) {
   float base;
   Condition *cond;
   Solution *sol;
+  int sumbytes=0;
+  int bytes;
 
-  while (std::getline(file, line)) {
+  while( getline(&line, &len, fp) != -1) {
     if(line[0] == '#')
       continue;
-    std::istringstream stream(line);
-    stream >> nodeType >> keyStr >> typeStr >> fieldTypeName;
+    sumbytes = 0;
+    sscanf(line+sumbytes,"%d %s  %s  %s %n", &nodeType, keyStr, typeStr, fieldTypeName, &bytes);
+    //printf("\n\n----line %d %s  %s  %s \n", nodeType, keyStr, typeStr, fieldTypeName);
+    sumbytes += bytes;
 
     switch(nodeType) {
     case -1:        //root
       root = nodemap["Root"]= new TreeNode(NULL, new Condition());
+      //printf("-----------------creating root %p \n", root);
       break;
 
     case 0:     //internal node
-      fieldType = fieldMap[typeStr + "_" + fieldTypeName];
-      stream >> op >> flag;
+      sprintf(fieldTypeName2,"%s_%s",typeStr,fieldTypeName);
+      fieldType = fieldMap[fieldTypeName2];
+      sscanf(line+sumbytes, "%s %n", op, &bytes);
+      sumbytes += bytes;
+      sscanf(line+sumbytes, "%d %n", &flag, &bytes);
+      sumbytes += bytes;
       if(flag == -1)
       {
-        stream >> base >> symbol >> numOfParents >> parentName;
+        sscanf(line+sumbytes, "%f    %s  %d %s %n", &base, symbol, &numOfParents, parentName, &bytes);
+        sumbytes += bytes;
         cond = new Condition(keyStr, fieldType, (Operator)opMap[op], base, (CompareSymbol)(symbolMap[symbol]));
         nodemap[keyStr] = new TreeNode(nodemap[parentName], cond);
         nodemap[parentName]->addChild(nodemap[keyStr]);
       }else if(flag == 0)
       {
-        stream >> avgMinMax >> baseFieldType >> symbol >> threshold >> numOfParents >> parentName;
-        cond = new Condition(keyStr, fieldType, (Operator)opMap[op], fieldMap[avgMinMax + "_" + baseFieldType], threshold,  (CompareSymbol)symbolMap[symbol]);
+        sscanf(line+sumbytes, "%s    %s  %s  %lf  %d %s %n", avgMinMax, baseFieldType, symbol, &threshold, &numOfParents, parentName, &bytes);
+        sprintf(baseFieldType2, "%s_%s", avgMinMax, baseFieldType);
+        sumbytes += bytes;
+        cond = new Condition(keyStr, fieldType, (Operator)opMap[op], fieldMap[baseFieldType2], threshold,  (CompareSymbol)symbolMap[symbol]);
         node =  new TreeNode(nodemap[parentName], cond);
         nodemap[keyStr] = node;
         nodemap[parentName]->addChild(nodemap[keyStr]);
@@ -102,12 +133,14 @@ void DecisionTree::build(const char *filename) {
       break;
 
     case 1:     //leaf
-      stream >> numOfParents >> parentName;
+      sscanf(line+sumbytes,"%d  %s %n", &numOfParents, parentName, &bytes); 
+      sumbytes += bytes;
       sol = new Solution( (Direction)updownMap[typeStr], (Effect)effectMap[fieldTypeName]);
       node = new TreeNode(nodemap[parentName], sol);
       nodemap[parentName]->addChild(node);
       for(int i=1; i<numOfParents; i++) {
-        stream >> parentName;
+        sscanf(line+sumbytes, "%s %n", parentName, &bytes);
+        sumbytes += bytes;
         node = new TreeNode(nodemap[parentName], sol);
         nodemap[parentName]->addChild(node);
       }
@@ -141,8 +174,7 @@ void DecisionTree::BFS() {
   };
 }
 
-void DecisionTree::DFS( double *input, std::vector<IntDoubleMap>& solutions,
-    int level, std::vector<Condition*>& problems, FILE *fp) {
+void DecisionTree::DFS( double *input, vector<IntDoubleMap>& solutions, int level, std::vector<Condition*>& problems, FILE *fp) {
   std::stack<TreeNode*> mystack;
   TreeNode *current = NULL;
   TreeNode *child = NULL;
@@ -200,9 +232,9 @@ void DecisionTree::DFS( double *input, std::vector<IntDoubleMap>& solutions,
 
 //keep the ones without conflict, keep the conflicted one for the problem without other solutions
 //(A,B,C) (B) --> (A,C) (B)
-void DecisionTree::DFS_3( double *input, std::vector<IntDoubleMap>& solutions, int level, std::vector<Condition*>& problems, FILE *fp) {
+void DecisionTree::DFS_3( double *input, vector<IntDoubleMap>& solutions, int level, std::vector<Condition*>& problems, FILE *fp) {
   TreeNode *child = NULL;
-  std::vector<IntDoubleMap> rawSolutions;
+  vector<IntDoubleMap> rawSolutions;
   for(root->beginChild(); !(root->isEndChild()); root->nextChild())
   {
     child = root->getCurrentChild();
@@ -211,11 +243,12 @@ void DecisionTree::DFS_3( double *input, std::vector<IntDoubleMap>& solutions, i
       //perform here
       child->printDataToFile(input, fp);
       rawSolutions.push_back(sub_DFS(input, child, problems, fp, solutions, level));
+      //rawSolutions.push_back(sub_DFS(input, child, problems, fp, solutions, level));
     }
   }
 
   //keep the ones without conflict
-  std::vector<int> hasSolutions(rawSolutions.size(), 0);
+  vector<int> hasSolutions(rawSolutions.size(), 0);
   IntDoubleMap &results = solutions[level];
   for(int i=0; i<rawSolutions.size();i++){
     //if there is only one solution, keep it
@@ -292,9 +325,7 @@ void DecisionTree::DFS_3( double *input, std::vector<IntDoubleMap>& solutions, i
   //result has the solutions
 }
 
-IntDoubleMap DecisionTree::sub_DFS(double *input, TreeNode *root,
-    std::vector<Condition*>& problems, FILE *fp,
-    std::vector<IntDoubleMap>& highPriorSolutions, int level) {
+IntDoubleMap DecisionTree::sub_DFS(double *input, TreeNode *root, std::vector<Condition*>& problems, FILE *fp, vector<IntDoubleMap>& highPriorSolutions, int level) {
   TreeNode *current = NULL;
   TreeNode *child = NULL;
   std::stack<TreeNode*> mystack;
