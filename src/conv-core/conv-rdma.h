@@ -60,6 +60,7 @@ void *CmiRdmaAlloc(int size);
 
 int CmiDoesCMAWork(void);
 
+/*
 // Method used to send an ack after completion of a reverse rdma operation
 void CmiInvokeRemoteAckHandler(int pe, void *ref);
 
@@ -80,5 +81,11 @@ void CmiForwardMsgToPeers(int size, char *msg); // for forwarding messages to my
 #if CMK_REG_REQUIRED
 void CmiInvokeRemoteDeregAckHandler(int pe, NcpyOperationInfo *info);
 #endif
+
+*/
+// Function declaration for onesided initialization
+void CmiOnesidedDirectInit(void);
+
+
 
 #endif
