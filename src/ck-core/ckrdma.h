@@ -257,6 +257,8 @@ class CkNcpyBuffer{
 
   friend void performEmApiCmaTransfer(CkNcpyBuffer &source, CkNcpyBuffer &dest, int child_count, ncpyEmApiMode emMode);
 
+  friend void performEmApiMemcpy(CkNcpyBuffer &source, CkNcpyBuffer &dest, ncpyEmApiMode emMode);
+
   friend void deregisterMemFromMsg(envelope *env, bool isRecv);
 };
 
@@ -379,7 +381,10 @@ struct NcpyBcastRecvPeerAckInfo{
 
 };
 
-
+struct NcpyP2PAckInfo{
+  int numOps;
+  CkNcpyBuffer src[0];
+};
 
 /***************************** Zerocopy Bcast Entry Method API ****************************/
 struct NcpyBcastAckInfo{
@@ -434,6 +439,10 @@ struct NcpyBcastInterimAckInfo : public NcpyBcastAckInfo {
 
 // Method called on the bcast source to store some information for ack handling
 void CkRdmaPrepareBcastMsg(envelope *env);
+
+void CkRdmaPrepareZCMsg(envelope *env, int &pe);
+
+void CkRdmaPrepareP2PMsg(envelope *env);
 
 void CkReplaceSourcePtrsInBcastMsg(envelope *env, NcpyBcastInterimAckInfo *bcastAckInfo, int origPe);
 

@@ -59,6 +59,7 @@ void LrtsSetRdmaBufferInfo(void *info, const void *ptr, int size, unsigned short
   if(mode == CMK_BUFFER_PREREG) {
     mr = METADATAFIELD(ptr)->key;
   } else {
+    CmiPrintf("[%d][%d][%d] REG Registering ptr:%p (LrtsSetRdmaBufferInfo)\n", CmiMyPe(), CmiMyNode(), CmiMyRank(), ptr);
     mr = ibv_reg_mr(context->pd, (void *)ptr, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ);
   }
   if (!mr) {
@@ -70,6 +71,7 @@ void LrtsSetRdmaBufferInfo(void *info, const void *ptr, int size, unsigned short
 }
 
 void registerDirectMemory(void *info, const void *addr, int size) {
+  CmiPrintf("[%d][%d][%d] REG Registering ptr:%p (registerDirectMemory)\n", CmiMyPe(), CmiMyNode(), CmiMyRank(), addr);
   struct ibv_mr *mr = ibv_reg_mr(context->pd, (void *)addr, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ);
   if (!mr) {
     CmiAbort("Memory Registration inside registerDirectMemory!\n");
@@ -196,6 +198,8 @@ void LrtsDeregisterMem(const void *ptr, void *info, int pe, unsigned short int m
   if(mode != CMK_BUFFER_PREREG && mode != CMK_BUFFER_NOREG) {
     if (ibv_dereg_mr(rdmadest->mr)) {
       CmiAbort("ibv_dereg_mr() failed at LrtsDeregisterMem\n");
+    } else {
+      CmiPrintf("[%d][%d][%d] DEREG Deregistering ptr:%p (LrtsDeregisterMem)\n", CmiMyPe(), CmiMyNode(), CmiMyRank(), ptr);
     }
   }
 }
