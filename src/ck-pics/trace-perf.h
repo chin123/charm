@@ -9,6 +9,9 @@
 #include "picsautoperf.h"
 #include <map>
 
+#define COMPRESS_EVENT_NO         392
+#define DECOMPRESS_EVENT_NO       393
+
 class TraceAutoPerf : public Trace {
 
   bool isTraceOn;
