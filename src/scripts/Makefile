@@ -794,7 +794,7 @@ LIBTRACE_CP=trace-controlPoints.o
 $(L)/libtrace-controlPoints.a: $(LIBTRACE_CP)
 	$(CHARMC) -o $@ $(LIBTRACE_CP)
 
-LIBTRACE_AP=trace-perf.o picsautoperf.o picsautoperfAPI.o picstreenode.o picsdecisiontree.o
+LIBTRACE_AP=trace-perf.o picsautoperf.o picsautoperfAPI.o PowerLogger.o picstreenode.o picsdecisiontree.o
 $(L)/libtrace-perfReport.a: $(LIBTRACE_AP)
 	$(CHARMC) -o $@ $(LIBTRACE_AP)
 
@@ -848,7 +848,7 @@ LIBTRACE_MEMORY=trace-memory.o
 $(L)/libtrace-memory.a: $(LIBTRACE_MEMORY)
 	$(CHARMC) -o $@ $(LIBTRACE_MEMORY)
 
-LIBTRACE_ALL=trace-all.o trace-projections.o trace-controlPoints.o picstreenode.o picsdecisiontree.o picsautoperfAPI.o picsautoperf.o trace-perf.o trace-summary.o trace-simple.o  \
+LIBTRACE_ALL=trace-all.o trace-projections.o trace-controlPoints.o picstreenode.o picsdecisiontree.o picsautoperfAPI.o picsautoperf.o trace-perf.o PowerLogger.o trace-summary.o trace-simple.o  \
 $(TAU_TRACE_OBJ) trace-projector.o traceCore.o traceCoreCommon.o charmProjections.o converseProjections.o machineProjections.o trace-memory.o trace-utilization.o
 
 $(L)/libtrace-all.a: $(LIBTRACE_ALL)
@@ -870,7 +870,7 @@ tracef_f.o: tracef_f.f90
 	-$(CHARMC) -o $@ -c tracef_f.f90 && $(CHARMC) -cpmod ../include tracemod.M  || touch $@
 
 # used for make depends
-TRACE_OBJS =  trace-projections.o trace-controlPoints.o picstreenode.o picsdecisiontree.o trace-perf.o picsautoperfAPI.o picsautoperf.o trace-summary.o  trace-simple.o \
+TRACE_OBJS =  trace-projections.o trace-controlPoints.o picstreenode.o picsdecisiontree.o trace-perf.o picsautoperfAPI.o picsautoperf.o PowerLogger.o trace-summary.o  trace-simple.o \
 	      trace-counter.o trace-utilization.o	\
 	      trace-bluegene.o trace-projector.o trace-converse.o trace-all.o \
           trace-memory.o 
