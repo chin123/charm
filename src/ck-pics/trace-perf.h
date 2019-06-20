@@ -18,7 +18,7 @@ class TraceAutoPerf : public Trace {
 
   TopoManager tmgr;
 
-  ObjectLoadMap_t objectLoads; 
+  ObjectLoadMap_t objectLoads;
 #if CMK_HAS_COUNTER_PAPI
   LONG_LONG_PAPI previous_papiValues[NUMPAPIEVENTS];
   LONG_LONG_PAPI papiValues[NUMPAPIEVENTS];
@@ -84,8 +84,8 @@ class TraceAutoPerf : public Trace {
   double phaseEndTime;
 
   /* * summary data */
-  PerfData *currentSummary; 
-  PerfData *currentTraceData; 
+  PerfData *currentSummary;
+  PerfData *currentTraceData;
 
   int currentGroupID;
   CkArrayIndex currentIndex;
@@ -113,7 +113,7 @@ public:
   void endTuneOverhead();
   // "creation" of message(s) - message Sends
   void creation(envelope *, int epIdx, int num=1);
-  void creationMulticast(envelope *, int epIdx, int num=1, int *pelist=NULL);
+  void creationMulticast(envelope *, int epIdx, int num=1, const int *pelist=NULL);
   void creationDone(int num=1);
 
   void messageRecv(void *env, int pe);
@@ -183,7 +183,7 @@ public:
 
   inline double untracedTime(){
     if(whenStoppedTracing <= 0){
-      return totalUntracedTime;     
+      return totalUntracedTime;
     } else {
       return totalUntracedTime + (phaseEndTime -whenStoppedTracing);
     }
@@ -195,33 +195,35 @@ public:
   }
   /** Fraction of time spent as overhead since resetting the counters */
   inline double overheadRatio(){
-    double t = totalTraceTime(); 
-    return (t - totalIdleTime - totalEntryMethodTime)/t; 
+    double t = totalTraceTime();
+    return (t - totalIdleTime - totalEntryMethodTime)/t;
   }
 
   inline double overheadTime(){
-    double t = totalTraceTime(); 
-    return (t - totalIdleTime - totalEntryMethodTime); 
+    double t = totalTraceTime();
+    return (t - totalIdleTime - totalEntryMethodTime);
   }
 
   inline double utilRatio() {
+    double inprogress_time = 0.0;
     if(lastEvent == BEGIN_PROCESSING)
-      totalEntryMethodTime += (CkWallTimer() - lastBeginExecuteTime);
-    return totalEntryMethodTime/ totalTraceTime(); 
+      inprogress_time = (CkWallTimer() - lastBeginExecuteTime);
+    return (totalEntryMethodTime + inprogress_time)/ totalTraceTime();
   }
 
   inline double utilTime() {
+    double inprogress_time = 0.0;
     if(lastEvent == BEGIN_PROCESSING)
-      totalEntryMethodTime += (CkWallTimer() - lastBeginExecuteTime);
-    return totalEntryMethodTime; 
+      inprogress_time = (CkWallTimer() - lastBeginExecuteTime);
+    return (totalEntryMethodTime + inprogress_time);
   }
 
   inline double appRatio() {
-    return totalAppTime/ totalTraceTime(); 
+    return totalAppTime/ totalTraceTime();
   }
 
   inline double appTime() {
-    return totalAppTime; 
+    return totalAppTime;
   }
   /** Highest memory usage (in MB) value we've seen since resetting the counters */
   inline double memoryUsageMB(){
@@ -237,7 +239,7 @@ public:
     return maxEntryTime;
   }
 
-  void getObjInfo(double &maxtime, double &totaltime, double &maxMsgCount, double &totalMsgCount, double &maxMsgSize, double &totalMsgSize, double &numObjs) ;
+  void summarizeObjectInfo(double &maxtime, double &totaltime, double &maxMsgCount, double &totalMsgCount, double &maxMsgSize, double &totalMsgSize, double &numObjs) ;
 
 
   inline long numInvocations() {
