@@ -263,6 +263,7 @@ void TraceAutoPerfBOC::endStepResumeCb(int fromGlobal, int fromPE, CkCallback cb
   {
     t->endStep(false);
   }
+  currentAppStep++;
   setAutoPerfDoneCallback(cb);
   run(fromGlobal, fromPE); 
 }
@@ -533,7 +534,7 @@ void TraceAutoPerfBOC::analyzeAndTune(){
     numOfSets = 1;
   else
     numOfSets = numGroups;
-  //autoTunerProxy[CkMyPe()].tune(solutions, numOfSets);
+  autoPerfProxy[CkpvAccess(myInterGroupParent)].tuneDone();
   //output results to screen or files
   for(int idx=0; idx<solutions.size(); idx++)
   {
@@ -577,9 +578,7 @@ void TraceAutoPerfBOC::tuneDone() {
     if(CkpvAccess(isExit))
       CkExit();
     else
-    {
       resume();
-    }
   }
 }
 
